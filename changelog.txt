@@ -1,6 +1,28 @@
-0.4.0
+0.7.0
+Added XP Scaling System. Replaced simple "Kills to next quality" with "Start Value", "Algorithm", and "Factor".
+Supported Algorithms: Constant, Linear, Exponential.
+Updated GUI to reflect dynamic XP requirements per level.
+Added translations for: Spanish, French, Russian, Portuguese (Brazil), Chinese (Simplified), Japanese, Korean, Italian.
+
+0.6.4
+Fixed invalid prototype type error. Switched to rendering.draw_text for visual feedback.
+
+0.6.3
+Fixed crash due to missing "flying-text" entity. Added custom "qt-flying-text".
+
+0.6.2
+Fixed crash due to invalid API call "max_quality". Now uses "is_quality_unlocked".
+
+0.6.1
+Fixed "Unknown key" errors for new settings (missing locale entries).
+
+0.6.0
+Added startup setting to limit quality leveling to unlocked quality.
+Added runtime settings to toggle level-up floating text and sound.
+
+
+0.5.0
 Fixed on Turrets Death issue when they die and promote in the same tic.
-Turns out you do find bugs when theres lots of bugs.
 
 0.3.0
 Added raise on built flag.

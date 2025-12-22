@@ -1,0 +1,1 @@
+-- flying-text prototype type is removed in 2.0, so we use rendering.draw_text in control.lua instead.

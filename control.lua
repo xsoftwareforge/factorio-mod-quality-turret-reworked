@@ -1,4 +1,8 @@
-local killstonext = settings.startup["Kills-to-next-quality"].value
+local xpStartValue = settings.startup["XP-Start-Value"].value
+local xpScalingAlgo = settings.startup["XP-Scaling-Algo"].value
+local xpScalingFactor = settings.startup["XP-Scaling-Factor"].value
+
+local limitQualityUnlocked = settings.startup["Limit-quality-to-unlocked"].value
 
 local validTurrets = {
 	["ammo-turret"] = true,
@@ -10,13 +14,39 @@ local validTurrets = {
 script.on_event(defines.events.on_entity_died, function(event)
 	local cause = event.cause
 	if cause and cause.valid and validTurrets[cause.type] then
+		UpdateGUI(cause)
 		DidTurretKill(cause)
 	end
 end)
 
+function GetKillsRequired(quality)
+	local level = quality.level or 0
+	
+	if xpScalingAlgo == "linear" then
+		return math.floor(xpStartValue + (level * xpScalingFactor))
+	elseif xpScalingAlgo == "exponential" then
+		return math.floor(xpStartValue * (xpScalingFactor ^ level))
+	else -- constant
+		return xpStartValue
+	end
+end
+
 function DidTurretKill(turret)
-	if turret.kills < killstonext then return end
+	local requiredKills = GetKillsRequired(turret.quality)
+	
+	if turret.kills < requiredKills then return end
 	if not turret.quality.next then return end
+	
+	-- Check for quality unlock limit
+	local nextQuality = turret.quality.next
+	if limitQualityUnlocked then
+		-- Create a safe check for unlocking
+		if turret.force.is_quality_unlocked then
+			if not turret.force.is_quality_unlocked(nextQuality) then
+				return
+			end
+		end
+	end
 	
 	-- Ensure we are upgrading a turret
 	if not validTurrets[turret.type] then return end
@@ -24,14 +54,13 @@ function DidTurretKill(turret)
 	-- Gather data before replacement
 	local ammo = GetAmmo(turret)
 	-- Carry over excess kills (fairness) instead of full reset or keeping all
-	local newKills = turret.kills - killstonext
+	local newKills = turret.kills - requiredKills
 	local damage_dealt = turret.damage_dealt 
 	local turretSurface = turret.surface
 	local turretPosition = turret.position
 	local turretForce = turret.force
 	local turretDirection = turret.direction
 	local turretName = turret.name
-	local nextQuality = turret.quality.next
 	
 	-- Capture fluids (for flamethrower turrets)
 	local fluids = {}
@@ -55,16 +84,25 @@ function DidTurretKill(turret)
 
 	if newTurret and newTurret.valid then
 		-- Visual Feedback (Flying Text + Sound)
-		newTurret.surface.create_entity{
-			name = "flying-text",
-			position = newTurret.position,
-			text = "Quality Up! [" .. newTurret.quality.name .. "]",
-			color = {r=1, g=0.8, b=0}
-		}
-		newTurret.surface.play_sound{
-			path = "utility/new_objective",
-			position = newTurret.position
-		}
+		if settings.global["Show-level-up-text"].value then
+			rendering.draw_text{
+				text = "Quality Up! [" .. newTurret.quality.name .. "]",
+				surface = newTurret.surface,
+				target = newTurret,
+				target_offset = {0, -1}, -- Slightly above
+				color = {r=1, g=0.8, b=0},
+				scale = 1.5,
+				alignment = "center",
+				time_to_live = 120 -- 2 Seconds
+			}
+		end
+		
+		if settings.global["Play-level-up-sound"].value then
+			newTurret.surface.play_sound{
+				path = "utility/new_objective",
+				position = newTurret.position
+			}
+		end
 
 		-- Restore Stats (Reset kills for balance)
 		newTurret.kills = newKills
@@ -175,9 +213,10 @@ function CreateProgressGUI(player, turret)
 
 	local flow = frame.add{type="flow", direction="vertical"}
 	
-	local progress = math.min(turret.kills / killstonext, 1)
+	local requiredKills = GetKillsRequired(turret.quality)
+	local progress = math.min(turret.kills / requiredKills, 1)
 	
-	flow.add{type="progressbar", value=progress, caption=turret.kills .. " / " .. killstonext .. " Kills"}
+	flow.add{type="progressbar", value=progress, caption=turret.kills .. " / " .. requiredKills .. " Kills"}
 	flow.add{type="label", caption="Next: " .. (turret.quality.next and turret.quality.next.name or "Max")}
 end
 
@@ -187,27 +226,21 @@ end
 -- But on_entity_died event is filtered.
 -- We need to check if we should update GUI in the main event.
 
-local function UpdateGUI(turret)
+function UpdateGUI(turret)
     -- Iterate all players, check if they have this turret open
     for _, player in pairs(game.connected_players) do
         if player.opened == turret and player.gui.relative["quality_turrets_frame"] then
             local frame = player.gui.relative["quality_turrets_frame"]
             local progressbar = frame.children[1].children[1]
-            local progress = math.min(turret.kills / killstonext, 1)
+			
+			local requiredKills = GetKillsRequired(turret.quality)
+            local progress = math.min(turret.kills / requiredKills, 1)
+			
             progressbar.value = progress
-            progressbar.caption = turret.kills .. " / " .. killstonext .. " Kills"
+            progressbar.caption = turret.kills .. " / " .. requiredKills .. " Kills"
         end
     end
 end
-
--- Modify the main event listener to call UpdateGUI
-script.on_event(defines.events.on_entity_died, function(event)
-	local cause = event.cause
-	if cause and cause.valid and validTurrets[cause.type] then
-		UpdateGUI(cause)
-		DidTurretKill(cause)
-	end
-end)
 
 
 
