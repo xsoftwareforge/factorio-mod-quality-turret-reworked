@@ -1,3 +1,8 @@
+0.8.0
+Improved GUI layout: clearer separation between progress bar and kill counter.
+Added per-player settings to customize GUI: Separate Kill Counter, Progress Bar Height, Spacer Height.
+Updated all localizations with new setting keys.
+
 0.7.0
 Added XP Scaling System. Replaced simple "Kills to next quality" with "Start Value", "Algorithm", and "Factor".
 Supported Algorithms: Constant, Linear, Exponential.

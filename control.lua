@@ -216,8 +216,33 @@ function CreateProgressGUI(player, turret)
 	local requiredKills = GetKillsRequired(turret.quality)
 	local progress = math.min(turret.kills / requiredKills, 1)
 	
-	flow.add{type="progressbar", value=progress, caption=turret.kills .. " / " .. requiredKills .. " Kills"}
-	flow.add{type="label", caption="Next: " .. (turret.quality.next and turret.quality.next.name or "Max")}
+	-- Read Settings
+	local separateCounter = player.mod_settings["UI-Separate-Kill-Counter"].value
+	local barHeight = player.mod_settings["UI-Progress-Bar-Height"].value
+	local spacerHeight = player.mod_settings["UI-Spacer-Height"].value
+
+	-- Progress Bar
+	local pbarCaption = ""
+	if not separateCounter then
+		pbarCaption = turret.kills .. " / " .. requiredKills .. " Kills"
+	end
+	
+	local pbar = flow.add{type="progressbar", name="quality_progressbar", value=progress, caption=pbarCaption}
+	pbar.style.horizontally_stretchable = true
+	pbar.style.height = barHeight
+	
+	-- Spacer & Kill Label (Conditional)
+	if separateCounter then
+		local spacer = flow.add{type="empty-widget", name="quality_spacer"}
+		spacer.style.height = spacerHeight
+		
+		flow.add{type="label", name="quality_kill_label", caption=turret.kills .. " / " .. requiredKills .. " Kills"}
+	else
+		-- Need a dummy label if we want UpdateGUI to be simpler? 
+		-- actually UpdateGUI checks if label exists.
+	end
+
+	flow.add{type="label", name="quality_next_label", caption="Next: " .. (turret.quality.next and turret.quality.next.name or "Max")}
 end
 
 -- Update GUI on kills (only if open)
@@ -231,13 +256,23 @@ function UpdateGUI(turret)
     for _, player in pairs(game.connected_players) do
         if player.opened == turret and player.gui.relative["quality_turrets_frame"] then
             local frame = player.gui.relative["quality_turrets_frame"]
-            local progressbar = frame.children[1].children[1]
-			
-			local requiredKills = GetKillsRequired(turret.quality)
-            local progress = math.min(turret.kills / requiredKills, 1)
-			
-            progressbar.value = progress
-            progressbar.caption = turret.kills .. " / " .. requiredKills .. " Kills"
+            local flow = frame.children[1]
+            local pbar = flow["quality_progressbar"]
+            local label = flow["quality_kill_label"]
+            
+            if pbar then
+                local requiredKills = GetKillsRequired(turret.quality)
+                local progress = math.min(turret.kills / requiredKills, 1)
+                
+                pbar.value = progress
+				
+				-- Check if we are in separate mode or merged mode
+				if label then
+					label.caption = turret.kills .. " / " .. requiredKills .. " Kills"
+				else
+					pbar.caption = turret.kills .. " / " .. requiredKills .. " Kills"
+				end
+            end
         end
     end
 end
