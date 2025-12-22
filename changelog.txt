@@ -1,0 +1,15 @@
+0.4.0
+Fixed on Turrets Death issue when they die and promote in the same tic.
+Turns out you do find bugs when theres lots of bugs.
+
+0.3.0
+Added raise on built flag.
+Returned kill count to reset on upgrade. Logic is that checking for quality levels would occur per kill and would increase the loop time.
+
+0.2.0
+Made kill number user pickable.
+Added support for modded turrets.
+
+0.1.0
+Initial release
+Limited turret support, hard coded kill count

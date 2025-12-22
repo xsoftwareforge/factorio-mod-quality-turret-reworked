@@ -1,0 +1,11 @@
+{
+    "name": "quality-turrets-reworked",
+    "version": "0.5.0",
+    "title": "Quality Turrets Reworked",
+    "author": "Naarkerotics, Xearox",
+    "factorio_version": "2.0",
+    "description": "Turrets gain quality by killing",
+    "dependencies": [
+        "quality"
+    ]
+}
