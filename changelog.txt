@@ -1,3 +1,7 @@
+0.9.0
+Added "Preserve kill counter" setting to persist kill count when mining and rebuilding turrets.
+Added localization for "Preserve kill counter" to all supported languages.
+
 0.8.0
 Improved GUI layout: clearer separation between progress bar and kill counter.
 Added per-player settings to customize GUI: Separate Kill Counter, Progress Bar Height, Spacer Height.

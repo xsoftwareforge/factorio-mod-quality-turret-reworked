@@ -19,7 +19,10 @@ Quality Turrets Reworked allows your turrets to level up and gain **Quality** ti
     *   Electric Turrets (Laser Turrets)
     *   Fluid Turrets (Flamethrowers)
     *   Artillery Turrets
+*   **Preserve Kill Counter**: (Optional, v0.8.0+) Turrets can keep their kill count when mined and placed again.
 *   **Configurable**: You decide how many kills are required for an upgrade via Mod Settings.
+*   **Localized**: Available in 10 languages!
+
 
 ## Usage
 
@@ -51,6 +54,21 @@ You can now configure how the required kills scale as the turret gains quality.
 *   **Limit quality to unlocked** (Startup): If enabled, turrets will not upgrade past the highest quality level currently unlocked by your force.
 *   **Show level up text** (Map): Toggle the "Quality Up!" flying text.
 *   **Play level up sound** (Map): Toggle the level-up sound effect.
+*   **Preserve kill counter** (Global): If enabled, turrets will save their kill count when mined. When you build a turret using that item, the kills are restored.
+
+## Supported Languages
+
+*   English (en)
+*   German (de)
+*   Spanish (es-ES)
+*   French (fr)
+*   Italian (it)
+*   Japanese (ja)
+*   Korean (ko)
+*   Portuguese (Brazil) (pt-BR)
+*   Russian (ru)
+*   Chinese (Simplified) (zh-CN)
+
 
 ## License
 

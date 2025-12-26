@@ -54,20 +54,18 @@ data:extend(
 	},
 	{
 		type = "int-setting",
-		name = "UI-Progress-Bar-Height",
-		setting_type = "runtime-per-user",
-		default_value = 20,
-		minimum_value = 1,
-		maximum_value = 100,
-		order = "f"
-	},
-	{
-		type = "int-setting",
 		name = "UI-Spacer-Height",
 		setting_type = "runtime-per-user",
 		default_value = 8,
 		minimum_value = 0,
 		maximum_value = 50,
+		order = "f"
+	},
+	{
+		type = "bool-setting",
+		name = "Preserve-kill-counter",
+		setting_type = "runtime-global",
+		default_value = false,
 		order = "g"
 	}
 	})

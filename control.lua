@@ -218,7 +218,7 @@ function CreateProgressGUI(player, turret)
 	
 	-- Read Settings
 	local separateCounter = player.mod_settings["UI-Separate-Kill-Counter"].value
-	local barHeight = player.mod_settings["UI-Progress-Bar-Height"].value
+	local barHeight = 10 -- player.mod_settings["UI-Progress-Bar-Height"].value
 	local spacerHeight = player.mod_settings["UI-Spacer-Height"].value
 
 	-- Progress Bar
@@ -276,6 +276,72 @@ function UpdateGUI(turret)
         end
     end
 end
+
+-- Mining Logic (Preserve Kills)
+function OnEntityMined(event)
+	local entity = event.entity
+	local buffer = event.buffer
+	
+	if not (entity and entity.valid and validTurrets[entity.type]) then return end
+	if entity.kills == 0 then return end
+    
+    -- Check mod setting
+    if not settings.global["Preserve-kill-counter"].value then return end
+	
+	if buffer and buffer.valid then
+        -- Iterate manually to find the stack (safest method)
+		for i = 1, #buffer do
+			local stack = buffer[i]
+			if stack and stack.valid_for_read and stack.name == entity.name then
+				stack.set_tag("kills", entity.kills)
+				
+                -- stack.label MUST be a string. We cannot use localised names here easily in control stage.
+                -- Using the internal name is safe.
+                stack.label = stack.name .. " (" .. entity.kills .. " Kills)"
+                
+				-- custom_description supports LocalisedString
+				stack.custom_description = {"", "Kills: ", entity.kills}
+				break 
+			end
+		end
+	end
+end
+
+-- Building Logic (Restore Kills)
+function OnEntityBuilt(event)
+	local entity = event.created_entity or event.entity -- robot built vs player built
+	
+	if not (entity and entity.valid and validTurrets[entity.type]) then return end
+    
+    -- Debugging
+    -- game.print("DEBUG: OnEntityBuilt for " .. entity.name)
+	
+    -- When placing the last item, stack is invalid, but event.tags should be present
+	local tags = event.tags
+    
+    -- Fallback to stack tags if available (e.g. infinite creative stack or not consumed)
+    if not tags and event.stack and event.stack.valid_for_read then
+        tags = event.stack.tags
+    end
+
+    if tags then
+        -- game.print("DEBUG: Tags found: " .. serpent.block(tags))
+        if tags.kills then
+    		entity.kills = tags.kills
+            -- game.print("DEBUG: Restored kills: " .. tags.kills)
+        else
+            -- game.print("DEBUG: Tags exist but no 'kills' key")
+        end
+    else
+        -- game.print("DEBUG: No tags found on stack or event")
+    end
+end
+
+script.on_event(defines.events.on_player_mined_entity, OnEntityMined)
+script.on_event(defines.events.on_robot_mined_entity, OnEntityMined)
+
+script.on_event(defines.events.on_built_entity, OnEntityBuilt)
+script.on_event(defines.events.on_robot_built_entity, OnEntityBuilt)
 
 
 
