@@ -1,3 +1,14 @@
+0.10.0
+Added new "Ghost Restoration" feature with configurable strategies.
+  - "Same": Keeps original quality (default).
+  - "Downgrade": Tries to find the next lowest available quality in the logistic network if the original is missing.
+  - "Exact": Always attempts to replace with a specific fixed quality.
+Added "Ghost-Fixed-Quality" setting for the "Exact" strategy.
+Added "Ghost-Fallback-Normal" setting: if "Downgrade" fails, it can fall back to Normal quality.
+Added detailed chat feedback when a ghost is replaced or downgraded.
+Fixed "Downgrade" logic to correctly identify items in the network.
+Updated localization for all supported languages.
+
 0.9.0
 Added "Preserve kill counter" setting to persist kill count when mining and rebuilding turrets.
 Added localization for "Preserve kill counter" to all supported languages.

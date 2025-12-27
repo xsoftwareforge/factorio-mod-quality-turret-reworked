@@ -21,6 +21,7 @@ Quality Turrets Reworked allows your turrets to level up and gain **Quality** ti
     *   Artillery Turrets
 *   **Preserve Kill Counter**: (Optional, v0.8.0+) Turrets can keep their kill count when mined and placed again.
 *   **Configurable**: You decide how many kills are required for an upgrade via Mod Settings.
+*   **Ghost Restoration**: (v0.10.0+) Smart handling of destroyed turrets (Downgrade/Fixed quality).
 *   **Localized**: Available in 10 languages!
 
 
@@ -48,6 +49,18 @@ You can now configure how the required kills scale as the turret gains quality.
 | **Constant** | - | 10 | 10 | 10 | 10 |
 | **Linear** | 5 | 10 | 15 | 20 | 25 |
 | **Exponential** | 2.0 | 10 | 20 | 40 | 80 |
+| **Exponential** | 2.0 | 10 | 20 | 40 | 80 |
+
+### Ghost Restoration (v0.10.0)
+
+When a turret is destroyed, the mod can now intelligently handle the ghost creation based on what you have available in your logistic network.
+**Settings (Global)**:
+*   **Ghost Replacement Strategy**:
+    *   `Same Quality` (Default): The ghost retains the quality of the destroyed turret.
+    *   `Downgrade if missing`: If the exact quality is not available in the logistic network, it will try to find the next lowest available quality (e.g., Legendary -> Epic -> Rare...).
+    *   `Always replace`: Forces the ghost to be a specific quality defined by "Fixed Ghost Quality".
+*   **Fixed Ghost Quality**: Select the target quality for the "Always replace" strategy.
+*   **Fallback to Normal Quality**: (For "Downgrade" strategy) If enabled, and no suitable lower quality is found, the ghost will be set to Normal quality.
 
 ### New Settings (v0.6.0)
 

@@ -67,5 +67,28 @@ data:extend(
 		setting_type = "runtime-global",
 		default_value = false,
 		order = "g"
+	},
+	{
+		type = "string-setting",
+		name = "Ghost-Strategy",
+		setting_type = "runtime-global",
+		default_value = "same",
+		allowed_values = {"same", "downgrade", "exact"},
+		order = "h"
+	},
+	{
+		type = "string-setting",
+		name = "Ghost-Fixed-Quality",
+		setting_type = "runtime-global",
+		default_value = "normal",
+		allowed_values = {"normal", "uncommon", "rare", "epic", "legendary"},
+		order = "i"
+	},
+	{
+		type = "bool-setting",
+		name = "Ghost-Fallback-Normal",
+		setting_type = "runtime-global",
+		default_value = true,
+		order = "j"
 	}
-	})
+})

@@ -346,3 +346,124 @@ script.on_event(defines.events.on_robot_built_entity, OnEntityBuilt)
 
 
 
+
+-- Smart Ghost Logic
+function OnPostEntityDied(event)
+	local ghost = event.ghost
+	if not ghost then return end
+	
+	-- Check if the dying entity was a supported turret
+	local prototype = event.prototype
+	if not (prototype and validTurrets[prototype.type]) then return end
+
+	local strategy = settings.global["Ghost-Strategy"].value
+	if strategy == "same" then return end
+
+	if strategy == "exact" then
+		local targetQualityName = settings.global["Ghost-Fixed-Quality"].value
+		if ghost.quality.name == targetQualityName then return end
+		ReplaceGhost(ghost, targetQualityName)
+		return
+	end
+
+	if strategy == "downgrade" then
+		-- Check network coverage
+		local network = ghost.surface.find_logistic_network_by_position(ghost.position, ghost.force)
+		if not network then
+			ghost.force.print({"message.no-logistic-network", ghost.ghost_prototype.localised_name, math.floor(ghost.position.x), math.floor(ghost.position.y)})
+			return
+		end
+
+
+		-- Check if current quality is available in logistic network
+		if IsQualityAvailable(ghost, ghost.quality) then 
+			ghost.force.print({"message.found-same-quality", ghost.ghost_prototype.localised_name, ghost.quality.localised_name})
+			return 
+		end
+		
+		-- Find next lowest available quality
+		local lowerQuality = GetLowerAvailableQuality(ghost, ghost.quality)
+		
+		if lowerQuality and lowerQuality.name ~= ghost.quality.name then
+			ghost.force.print({"message.downgraded-quality", ghost.ghost_prototype.localised_name, ghost.quality.localised_name, lowerQuality.localised_name})
+			ReplaceGhost(ghost, lowerQuality.name)
+		else
+			-- No lower quality found. Check for fallback
+			if settings.global["Ghost-Fallback-Normal"].value and ghost.quality.name ~= "normal" then
+				ghost.force.print({"message.fallback-to-normal", ghost.ghost_prototype.localised_name})
+				ReplaceGhost(ghost, "normal")
+			else
+				ghost.force.print({"message.no-lower-quality-found", ghost.ghost_prototype.localised_name})
+			end
+		end
+	end
+end
+
+function IsQualityAvailable(ghost, quality)
+	local network = ghost.surface.find_logistic_network_by_position(ghost.position, ghost.force)
+	if not network then 
+		-- game.print("DEBUG: No network found at " .. serpent.line(ghost.position))
+		return false 
+	end
+	
+	-- We must check the ITEM count, not the Entity Name.
+	local prototype = ghost.ghost_prototype
+	local items = prototype.items_to_place_this
+	
+	if items then
+		for _, itemStack in pairs(items) do
+			local count = network.get_item_count({name=itemStack.name, quality=quality.name})
+			-- game.print("DEBUG: Checking " .. itemStack.name .. " (" .. quality.name .. "): " .. count)
+			if count > 0 then return true end
+		end
+	end
+	
+	return false
+end
+
+function GetLowerAvailableQuality(ghost, startQuality)
+	local currentLevel = startQuality.level
+	local bestQuality = nil
+	local bestLevel = -1
+	
+	-- Iterate all qualities to find candidates
+	for name, q in pairs(prototypes.quality) do
+		if not q.hidden and q.level < currentLevel then
+			-- We want the highest possible level that is lower than current
+			if q.level > bestLevel then
+				-- Check availability
+				if IsQualityAvailable(ghost, q) then
+					bestQuality = q
+					bestLevel = q.level
+				end
+			end
+		end
+	end
+	
+	-- game.print("DEBUG: Best lower quality found: " .. (bestQuality and bestQuality.name or "None"))
+	return bestQuality
+end
+
+function ReplaceGhost(ghost, newQualityName)
+	local surface = ghost.surface
+	local position = ghost.position
+	local force = ghost.force
+	local direction = ghost.direction
+	local inner_name = ghost.ghost_name
+	
+	-- Preserve other ghost properties if possible?
+	-- For now, simple replacement
+	
+	ghost.destroy()
+	surface.create_entity{
+		name = "entity-ghost",
+		inner_name = inner_name,
+		position = position,
+		force = force,
+		direction = direction,
+		quality = newQualityName,
+		raise_built = true
+	}
+end
+
+script.on_event(defines.events.on_post_entity_died, OnPostEntityDied)
