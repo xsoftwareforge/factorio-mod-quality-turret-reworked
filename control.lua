@@ -11,11 +11,124 @@ local validTurrets = {
 	["artillery-turret"] = true
 }
 
+local aai_active = script.active_mods and script.active_mods["aai-programmable-vehicles"]
+local deadzone_block_types = {"unit-spawner", "turret", "ammo-turret", "electric-turret", "fluid-turret", "inserter"}
+local deadzone_block_type_set = {
+	["unit-spawner"] = true,
+	["turret"] = true,
+	["ammo-turret"] = true,
+	["electric-turret"] = true,
+	["fluid-turret"] = true,
+	["inserter"] = true
+}
+
+local function GetState()
+	global.quality_turrets = global.quality_turrets or {}
+	global.quality_turrets.pending_upgrades = global.quality_turrets.pending_upgrades or {}
+	return global.quality_turrets
+end
+
+local function GetDeadzoneRange()
+	if not aai_active then return 0 end
+	local setting = settings.global["deadzone-construction-denial-range"]
+	if not setting then return 0 end
+	local range = setting.value or 0
+	if range < 0 then return 0 end
+	return range
+end
+
+local function IsForceHostile(force, other_force)
+	if not (force and force.valid and other_force and other_force.valid) then return false end
+	local name = other_force.name
+	if name == "neutral" or name == "capture" or name == "conquest" or name == "ignore" or name == "friendly"
+		or name == "kr-internal-turrets" then
+		return false
+	end
+	if other_force == force then return false end
+	if force.get_cease_fire(other_force) then return false end
+	if force.get_friend(other_force) then return false end
+	return true
+end
+
+local function GetHostileForceNames(force)
+	local names = {}
+	for _, other_force in pairs(game.forces) do
+		if IsForceHostile(force, other_force) then
+			names[#names + 1] = other_force.name
+		end
+	end
+	return names
+end
+
+local function IsDeadzoneBlocked(turret)
+	local range = GetDeadzoneRange()
+	if range <= 0 then return false end
+	if not (turret and turret.valid) then return false end
+	local hostile_forces = GetHostileForceNames(turret.force)
+	if #hostile_forces == 0 then return false end
+	local blockers = turret.surface.find_entities_filtered{
+		radius = range,
+		position = turret.position,
+		type = deadzone_block_types,
+		force = hostile_forces,
+		limit = 1
+	}
+	return blockers[1] ~= nil
+end
+
+local function QueuePendingUpgrade(turret)
+	if not (turret and turret.valid and turret.unit_number) then return end
+	local state = GetState()
+	if state.pending_upgrades[turret.unit_number] then return end
+	state.pending_upgrades[turret.unit_number] = {entity = turret}
+end
+
+local function ClearPendingUpgrade(unit_number)
+	if not unit_number then return end
+	local state = GetState()
+	state.pending_upgrades[unit_number] = nil
+end
+
+local function RecheckPendingUpgradesNear(entity)
+	local range = GetDeadzoneRange()
+	if range <= 0 then return end
+	local state = GetState()
+	local pending = state.pending_upgrades
+	if not next(pending) then return end
+	if not (entity and entity.valid) then return end
+	local surface = entity.surface
+	local position = entity.position
+	local max_dist_sq = range * range
+	for unit_number, data in pairs(pending) do
+		local turret = data.entity
+		if not (turret and turret.valid) then
+			pending[unit_number] = nil
+		elseif turret.surface == surface then
+			local dx = turret.position.x - position.x
+			local dy = turret.position.y - position.y
+			if (dx * dx + dy * dy) <= max_dist_sq then
+				DidTurretKill(turret)
+				if not (turret and turret.valid) then
+					pending[unit_number] = nil
+				end
+			end
+		end
+	end
+end
+
 script.on_event(defines.events.on_entity_died, function(event)
 	local cause = event.cause
 	if cause and cause.valid and validTurrets[cause.type] then
 		UpdateGUI(cause)
 		DidTurretKill(cause)
+	end
+
+	local entity = event.entity
+	if entity and entity.unit_number and validTurrets[entity.type] then
+		ClearPendingUpgrade(entity.unit_number)
+	end
+	if entity and entity.valid and deadzone_block_type_set[entity.type] then
+		RecheckPendingUpgradesNear(entity)
 	end
 end)
 
@@ -51,6 +164,11 @@ function DidTurretKill(turret)
 	-- Ensure we are upgrading a turret
 	if not validTurrets[turret.type] then return end
 
+	if IsDeadzoneBlocked(turret) then
+		QueuePendingUpgrade(turret)
+		return
+	end
+
 	-- Gather data before replacement
 	local ammo = GetAmmo(turret)
 	-- Carry over excess kills (fairness) instead of full reset or keeping all
@@ -83,6 +201,8 @@ function DidTurretKill(turret)
 	}
 
 	if newTurret and newTurret.valid then
+		ClearPendingUpgrade(turret.unit_number)
+
 		-- Visual Feedback (Flying Text + Sound)
 		if settings.global["Show-level-up-text"].value then
 			rendering.draw_text{
