@@ -1,3 +1,10 @@
+0.11.1
+Fixed a crash introduced by the 0.11.0 AAI Programmable Vehicles support.
+
+0.11.0
+Added support for AAI Programmable Vehicles: turrets are not rebuilt while an exclusion zone is active and rebuild after it ends.
+Added support for Quality Plus Plus.
+
 0.10.0
 Added new "Ghost Restoration" feature with configurable strategies.
   - "Same": Keeps original quality (default).
