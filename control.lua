@@ -22,9 +22,17 @@ local deadzone_block_type_set = {
 	["inserter"] = true
 }
 
-local function GetState()
+local function EnsureState()
+	global = global or {}
 	global.quality_turrets = global.quality_turrets or {}
 	global.quality_turrets.pending_upgrades = global.quality_turrets.pending_upgrades or {}
+end
+
+script.on_init(EnsureState)
+script.on_configuration_changed(EnsureState)
+
+local function GetState()
+	EnsureState()
 	return global.quality_turrets
 end
 
@@ -171,6 +179,7 @@ function DidTurretKill(turret)
 
 	-- Gather data before replacement
 	local ammo = GetAmmo(turret)
+	local turretUnitNumber = turret.unit_number
 	-- Carry over excess kills (fairness) instead of full reset or keeping all
 	local newKills = turret.kills - requiredKills
 	local damage_dealt = turret.damage_dealt 
@@ -201,12 +210,14 @@ function DidTurretKill(turret)
 	}
 
 	if newTurret and newTurret.valid then
-		ClearPendingUpgrade(turret.unit_number)
+		if turretUnitNumber then
+			ClearPendingUpgrade(turretUnitNumber)
+		end
 
 		-- Visual Feedback (Flying Text + Sound)
 		if settings.global["Show-level-up-text"].value then
 			rendering.draw_text{
-				text = "Quality Up! [" .. newTurret.quality.name .. "]",
+				text = {"", "Quality Up! [", newTurret.quality.localised_name or newTurret.quality.name, "]"},
 				surface = newTurret.surface,
 				target = newTurret,
 				target_offset = {0, -1}, -- Slightly above
@@ -362,7 +373,16 @@ function CreateProgressGUI(player, turret)
 		-- actually UpdateGUI checks if label exists.
 	end
 
-	flow.add{type="label", name="quality_next_label", caption="Next: " .. (turret.quality.next and turret.quality.next.name or "Max")}
+	local next_quality_name = "Max"
+	if turret.quality.next then
+		next_quality_name = turret.quality.next.localised_name or turret.quality.next.name
+	end
+
+	flow.add{
+		type = "label",
+		name = "quality_next_label",
+		caption = {"", "Next: ", next_quality_name}
+	}
 end
 
 -- Update GUI on kills (only if open)
