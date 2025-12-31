@@ -1,3 +1,11 @@
+local ghost_fixed_quality_values = {"normal", "uncommon", "rare", "epic", "legendary"}
+if mods and mods["Quality-Plus-Plus"] then
+	local extra_qualities = {"mythical", "masterwork", "wondrous", "artifactual"}
+	for _, quality_name in ipairs(extra_qualities) do
+		table.insert(ghost_fixed_quality_values, quality_name)
+	end
+end
+
 data:extend(
 {
 	{
@@ -81,7 +89,7 @@ data:extend(
 		name = "Ghost-Fixed-Quality",
 		setting_type = "runtime-global",
 		default_value = "normal",
-		allowed_values = {"normal", "uncommon", "rare", "epic", "legendary"},
+		allowed_values = ghost_fixed_quality_values,
 		order = "i"
 	},
 	{
